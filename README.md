@@ -91,7 +91,9 @@ export function createApp() {
     "QUERY",
     "/api/users/search",
     ({ body }) => /* ... */,
-    { body: t.Union([/* TypeBox バリデーション */]) },
+    // valibot スキーマ（Standard Schema V1）をそのまま渡す — Elysia 1.4+ が検証し型も推論。
+    // 不正なボディは 422 で拒否される。スキーマは src/shared/user-search.ts で共有。
+    { body: QuerySchema },
   );
 }
 
@@ -117,6 +119,61 @@ const { data } = await api.api.users.search.QUERY({ kind: "byName", name: "Alice
 生の `fetch` および Eden Fetch の使用は独自ルール `project/no-fetch` / `project/ban-eden-fetch`（oxlint JSプラグイン）で禁止しています。
 
 書き込みは従来どおり POST/PUT/PATCH/DELETE を使う。
+
+### データ取得は React Query
+
+クライアントの読み取りは **TanStack Query**（`@tanstack/react-query`）を使う。
+`src/main.tsx` で `QueryClientProvider` を提供済み。
+コンポーネント内で `useState` + 手動フェッチはせず、クエリキーでキャッシュされる `useQuery` に委ねる:
+
+```ts
+const search = useQuery({
+  enabled: submitted.status === "search",
+  queryFn: async () => {
+    if (submitted.status !== "search") throw new Error("Search query not committed");
+    const res = await api.api.users.search.QUERY(submitted.query, {});
+    if (res.error) throw res.error;
+    return res.data;
+  },
+  queryKey: ["users", "search", submitted],
+});
+```
+
+`enabled` を切って submit 後にだけ発火させ、UI 状態はクエリ結果から派生させる（`isPending` / `isError` / `data`）。
+
+### フォームは TanStack Form
+
+フォームの状態管理は **TanStack Form**（`@tanstack/react-form`）を使う。
+フィールド値の `useState` 管理はしない。
+バリデーションは **valibot** スキーマをそのまま validator として渡す（Standard Schema V1 準拠のためアダプタ不要）:
+
+```ts
+const form = useForm({
+  defaultValues: { name: "" },
+  validators: {
+    onChange: SearchSchema, // valibot スキーマがそのまま validator になる
+  },
+  onSubmit: ({ value }) => {
+    onSubmit(value); // コミットされた値を親（クエリキー）へ渡す
+  },
+});
+const nameField = useField({ form, name: "name" });
+
+// valibot スキーマ（フォームの値の型も InferOutput で導出）
+const SearchSchema = valibot.object({
+  name: valibot.pipe(valibot.string(), valibot.maxLength(50)),
+});
+
+<form onSubmit={(event) => { event.preventDefault(); event.stopPropagation(); void form.handleSubmit(); }}>
+  <Input
+    value={nameField.state.value}
+    onChange={(event) => nameField.handleChange(event.target.value)}
+  />
+  <form.Subscribe selector={(state) => state.isSubmitting}>
+    {(isSubmitting) => <Button type="submit" disabled={isSubmitting}>Search</Button>}
+  </form.Subscribe>
+</form>
+```
 
 ## React Compiler
 
