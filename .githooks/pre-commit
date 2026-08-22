@@ -3,7 +3,7 @@
 set -e
 cd "$(git rev-parse --show-toplevel)"
 
-files=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx|js|jsx|css|json)$' || true)
+files=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx|js|jsx|css)$' || true)
 [ -z "$files" ] && exit 0
 
 bunx oxfmt "$files"

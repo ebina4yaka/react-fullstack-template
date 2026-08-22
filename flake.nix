@@ -23,6 +23,7 @@
           shellHook = ''
             echo "ts-template dev shell: bun $(bun --version)"
             [ -d node_modules ] || echo "run 'bun install' first"
+            git config core.hooksPath .githooks
           '';
         };
       }
