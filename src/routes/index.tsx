@@ -5,24 +5,21 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { api } from "@/lib/api";
 import type { SearchResponse } from "@/server/app";
 
 export const Route = createFileRoute("/")({ component: HomePage });
 
 // React Compiler auto-memoizes this component; no useMemo/useCallback needed.
 function HomePage() {
-  const [name, setName] = useState(""),
-    [response, setResponse] = useState<Maybe<SearchResponse>>(Maybe.nothing());
+  const [name, setName] = useState("");
+  const [response, setResponse] = useState<Maybe<SearchResponse>>(Maybe.nothing());
 
   async function handleSearch() {
-    const body = name === "" ? { kind: "all" as const } : { kind: "byName" as const, name },
-      // QUERY method (RFC 9110 ext.): safe read with a body instead of GET + query params.
-      res = await fetch("/api/users/search", {
-        body: JSON.stringify(body),
-        headers: { "content-type": "application/json" },
-        method: "QUERY",
-      });
-    setResponse(Maybe.of((await res.json()) as SearchResponse));
+    const body = name === "" ? { kind: "all" as const } : { kind: "byName" as const, name };
+    // HTTP QUERY via Eden Treaty — request/response are typed end to end.
+    const { data } = await api.api.users.search.QUERY(body);
+    setResponse(Maybe.of(data));
   }
 
   return (

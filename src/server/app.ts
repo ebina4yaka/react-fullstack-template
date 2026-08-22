@@ -27,3 +27,5 @@ export function createApp() {
     },
   );
 }
+
+export type App = ReturnType<typeof createApp>;

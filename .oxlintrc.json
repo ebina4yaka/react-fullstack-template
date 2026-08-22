@@ -12,6 +12,8 @@
   "rules": {
     "project/ban-switch": "error",
     "project/ban-let": "error",
+    "project/no-fetch": "error",
+    "project/ban-eden-fetch": "error",
 
     "react/rules-of-hooks": "error",
     "react/exhaustive-deps": "warn",

@@ -7,6 +7,7 @@ TypeScript フルスタックテンプレート。
 | Frontend | React 19 + React Compiler（自動メモ化）+ TanStack Router（ファイルベース）+ Tailwind CSS v4 + shadcn/ui |
 | Backend  | ElysiaJS on Bun                                                                                         |
 | 言語規約 | true-myth (`Maybe`) / ts-pattern / oxlint（JSプラグイン含む）+ oxfmt                                    |
+| API連携  | Eden Treaty（型安全、HTTP QUERY対応）                                                                   |
 
 ## セットアップ
 
@@ -85,23 +86,35 @@ GET のように安全だがボディを持てるため、複雑な検索条件�
 サーバ側（`src/server/**` では `.get(` 呼び出し自体を lint で禁止）:
 
 ```ts
-new Elysia().route(
-  'QUERY',
-  '/api/users/search',
-  ({ body }) => /* ... */,
-  { body: t.Union([/* TypeBox バリデーション */]) }
-)
+export function createApp() {
+  return new Elysia().route(
+    "QUERY",
+    "/api/users/search",
+    ({ body }) => /* ... */,
+    { body: t.Union([/* TypeBox バリデーション */]) },
+  );
+}
+
+// フロントエンドから参照する型
+export type App = ReturnType<typeof createApp>;
 ```
 
-クライアント側:
+クライアント側は **Eden Treaty**（`src/lib/api.ts`）:
 
 ```ts
-fetch("/api/users/search", {
-  method: "QUERY",
-  headers: { "content-type": "application/json" },
-  body: JSON.stringify({ kind: "byName", name: "Alice" }),
-});
+import { treaty } from "@elysiajs/eden";
+import type { App } from "@/server/app";
+
+export const api = treaty<App>(globalThis.location?.host ?? "localhost:3001");
 ```
+
+```ts
+// ルート定義から request/response が完全に型付けされる。
+// Eden Treaty は HTTP QUERY に対応 — メソッド名がそのまま .QUERY() として露出する。
+const { data } = await api.api.users.search.QUERY({ kind: "byName", name: "Alice" });
+```
+
+生の `fetch` および Eden Fetch の使用は独自ルール `project/no-fetch` / `project/ban-eden-fetch`（oxlint JSプラグイン）で禁止しています。
 
 書き込みは従来どおり POST/PUT/PATCH/DELETE を使う。
 
