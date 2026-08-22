@@ -18,7 +18,7 @@ function HomePage() {
   async function handleSearch() {
     const body = name === "" ? { kind: "all" as const } : { kind: "byName" as const, name };
     // HTTP QUERY via Eden Treaty — request/response are typed end to end.
-    const { data } = await api.api.users.search.QUERY(body);
+    const { data } = await api.api.users.search.QUERY(body, {});
     setResponse(Maybe.of(data));
   }
 
