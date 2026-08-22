@@ -1,4 +1,6 @@
 node_modules/
 dist/
+result
+result-*
 *.local
 .DS_Store
