@@ -1,0 +1,66 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "jsPlugins": ["./oxlint-plugin.ts"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn",
+    "style": "warn"
+  },
+  "plugins": ["typescript", "unicorn", "oxc", "react"],
+  "ignorePatterns": ["src/routeTree.gen.ts"],
+  "rules": {
+    "project/ban-switch": "error",
+    "project/ban-let": "error",
+
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "warn",
+    // JSX uses the automatic runtime (tsconfig jsx: react-jsx)
+    "react/react-in-jsx-scope": "off",
+    // false positive on JSX returned from ts-pattern match branches
+    "react/no-unstable-nested-components": "off",
+    // shadcn/ui components spread props by design
+    "react/jsx-props-no-spreading": "off",
+
+    "no-undefined": "error",
+    "unicorn/no-null": "error",
+    "typescript/no-explicit-any": "error",
+    "typescript/no-restricted-types": [
+      "error",
+      {
+        "types": {
+          "undefined": "undefined is banned. Model absence with Maybe (true-myth) or a discriminated union.",
+          "null": "null is banned. Model absence with Maybe (true-myth) or a discriminated union."
+        }
+      }
+    ],
+    "typescript/no-non-null-assertion": "error",
+
+    // --- style category tuning ---
+    // function declarations (matches shadcn/ui style)
+    "func-style": ["warn", "declaration"],
+    // member order within an import is enforced; statement order is left free
+    "sort-imports": ["warn", { "ignoreDeclarationSort": true }],
+    // uppercase factory functions without `new` are idiomatic (t.Object, Maybe.just)
+    "new-cap": "off",
+    // one declaration per line keeps React hooks readable
+    "one-var": "off",
+    "no-ternary": "off",
+    // declarative builders nest calls legitimately (TypeBox schemas, ts-pattern)
+    "unicorn/max-nested-calls": "off"
+  },
+  "overrides": [
+    {
+      "files": ["**/server/**"],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "property": "get",
+            "message": "GET is banned in server code. Use app.route('QUERY', path, handler) (HTTP QUERY method) instead."
+          }
+        ]
+      }
+    }
+  ]
+}
